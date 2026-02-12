@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB_a8hYu7k2Y1iBJKFdEzjq0MWSQjdmMw",
+            authDomain: "resonant-e9742.firebaseapp.com",
+            projectId: "resonant-e9742",
+            storageBucket: "resonant-e9742.firebasestorage.app",
+            messagingSenderId: "78620980319",
+            appId: "1:78620980319:web:0471649176a45ffcef17ea",
+            measurementId: "G-N59RDC2D1L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+
+        window.firebaseAuth = auth;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+    </script>
+    <title>Sign Up - Resonant</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hidden { display: none; }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold gradient-text">Resonant</h1>
+            <p class="text-gray-600 mt-2">Create your account</p>
+        </div>
+        
+        <form id="signupForm" class="space-y-4">
+            <input 
+                type="email" 
+                id="signupEmail" 
+                placeholder="Email" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+            >
+            <input 
+                type="password" 
+                id="signupPassword" 
+                placeholder="Password (min 6 characters)" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+            >
+            <button 
+                type="submit" 
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+            >
+                Sign Up
+            </button>
+        </form>
+
+        <div class="mt-4 text-center">
+            <a href="index.html" class="text-purple-600 hover:text-purple-700">Already have an account? Sign In</a>
+        </div>
+
+        <div id="signupSuccess" class="hidden text-center mt-4">
+            <div class="text-green-600 font-medium mb-2">✓ Account created!</div>
+            <p class="text-gray-600 text-sm">Taking you to setup your profile...</p>
+        </div>
+
+        <div id="signupError" class="hidden text-center mt-4">
+            <p class="text-red-600 text-sm"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('signupForm');
+            const errorDiv = document.getElementById('signupError');
+            const successDiv = document.getElementById('signupSuccess');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('signupEmail').value.trim();
+                const password = document.getElementById('signupPassword').value;
+                
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+                
+                try {
+                    await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+                    successDiv.classList.remove('hidden');
+                    setTimeout(() => window.location.href = 'onboarding.html', 2000);
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

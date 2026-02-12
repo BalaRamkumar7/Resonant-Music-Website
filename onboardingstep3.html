@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        // Make Firestore functions globally available
+        window.firestoreDoc = doc;
+        window.firestoreSetDoc = setDoc;
+        window.firestoreGetDoc = getDoc;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB_a8hYu7k2Y1iBJKFdEzjq0MWSQjdmMw",
+            authDomain: "resonant-e9742.firebaseapp.com",
+            projectId: "resonant-e9742",
+            storageBucket: "resonant-e9742.firebasestorage.app",
+            messagingSenderId: "78620980319",
+            appId: "1:78620980319:web:0471649176a45ffcef17ea",
+            measurementId: "G-N59RDC2D1L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseDB = db;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                loadOnboardingData(user);
+            }
+        });
+
+        async function loadOnboardingData(user) {
+            try {
+                const userDoc = await window.firestoreGetDoc(window.firestoreDoc(window.firebaseDB, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    
+                    // Check if they completed step 2
+                    if (data.onboardingStep !== 2 && !data.onboardingSkipped) {
+                        if (data.onboardingStep < 2) {
+                            window.location.href = 'onboarding.html';
+                        } else {
+                            window.location.href = 'onboarding-step2.html';
+                        }
+                    } else if (data.onboardingCompleted) {
+                        window.location.href = 'discover.html';
+                    } else {
+                        // Load existing data and show summary
+                        loadUserSummary(data);
+                        document.getElementById('onboardingContainer').classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading onboarding data:', error);
+                window.location.href = 'onboarding-step2.html';
+            }
+        }
+
+        function loadUserSummary(data) {
+            // Load user profile
+            if (data.displayName) {
+                document.getElementById('userDisplayName').textContent = data.displayName;
+            }
+            if (data.profilePicture) {
+                document.getElementById('userProfilePic').src = data.profilePicture;
+            }
+
+            // Load music preferences summary
+            const preferencesDiv = document.getElementById('preferencesSummary');
+            let summaryHTML = '';
+
+            if (data.favoriteArtists && data.favoriteArtists.length > 0) {
+                summaryHTML += `
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">🎵 Favorite Artists</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.favoriteArtists.map(artist => 
+                                `<span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">${artist.name}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.favoriteGenres && data.favoriteGenres.length > 0) {
+                summaryHTML += `
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">🎸 Favorite Genres</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.favoriteGenres.map(genre => 
+                                `<span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">${genre}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.favoriteSongs && data.favoriteSongs.length > 0) {
+                summaryHTML += `
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">🎶 Favorite Songs</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.favoriteSongs.map(song => 
+                                `<span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">${song.name} - ${song.artist}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (summaryHTML === '') {
+                summaryHTML = '<p class="text-gray-500 italic">No preferences selected - we\'ll discover your taste as you explore!</p>';
+            }
+
+            preferencesDiv.innerHTML = summaryHTML;
+        }
+    </script>
+    <title>Welcome to Resonant</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .underground-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            cursor: pointer;
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            outline: none;
+            margin: 20px 0;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .underground-slider::-webkit-slider-track {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            height: 12px;
+            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .underground-slider::-moz-range-track {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            height: 12px;
+            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .underground-slider::-ms-track {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            height: 12px;
+            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .underground-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: white;
+            border: 3px solid #8b5cf6;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .underground-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        
+        .underground-slider::-moz-range-track {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .underground-slider::-moz-range-thumb {
+            background: white;
+            border: 3px solid #8b5cf6;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .slider-marker {
+            transition: all 0.3s ease;
+        }
+        
+        .slider-marker.active {
+            transform: scale(1.2);
+            font-weight: 600;
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.6s ease forwards;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Onboarding Container -->
+    <div id="onboardingContainer" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-3xl">
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Step 3 of 3</span>
+                    <span class="text-sm text-gray-600">100%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="progress-step active h-2 rounded-full" style="width: 100%"></div>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <div class="w-8 h-2 bg-purple-600 rounded-full"></div>
+                    <div class="w-8 h-2 bg-purple-600 rounded-full"></div>
+                    <div class="w-8 h-2 bg-purple-600 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Screen 3: Welcome & Finish -->
+            <div id="screen3" class="bg-white rounded-2xl shadow-xl p-8">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 pulse">
+                        <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome to Resonant!</h1>
+                    <p class="text-gray-600">Your personalized underground music discovery journey starts now.</p>
+                </div>
+
+                <!-- User Profile Summary -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 mb-8">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <img id="userProfilePic" src="https://picsum.photos/60/60?text=USER&bg=667eea&color=ffffff" 
+                             alt="Profile" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Hello, <span id="userDisplayName">Music Lover</span>! 👋</h2>
+                            <p class="text-gray-600">Here's what we learned about your music taste:</p>
+                        </div>
+                    </div>
+                    
+                    <div id="preferencesSummary" class="space-y-3">
+                        <!-- Preferences will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Underground Slider -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">How Underground Do You Want to Go?</h3>
+                    <div class="relative">
+                        <input type="range" id="undergroundSlider" min="0" max="100" value="50" 
+                               class="underground-slider w-full mb-4">
+                        
+                        <div class="flex justify-between text-sm">
+                            <div class="slider-marker" data-value="0">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">📻</div>
+                                    <span class="text-gray-600">Mainstream</span>
+                                </div>
+                            </div>
+                            <div class="slider-marker" data-value="25">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">🌟</div>
+                                    <span class="text-gray-600">Indie</span>
+                                </div>
+                            </div>
+                            <div class="slider-marker" data-value="50">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">⚡</div>
+                                    <span class="text-gray-600">Underground</span>
+                                </div>
+                            </div>
+                            <div class="slider-marker" data-value="75">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">🔥</div>
+                                    <span class="text-gray-600">Deep Cut</span>
+                                </div>
+                            </div>
+                            <div class="slider-marker" data-value="100">
+                                <div class="text-center">
+                                    <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold mb-1">🌌</div>
+                                    <span class="text-gray-600">Obscure</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600 text-center">
+                            <span id="sliderDescription" class="font-medium">Balanced mix of indie and underground music</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature Preview -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">What You'll Discover</h3>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div class="feature-card bg-purple-50 rounded-lg p-4 text-center">
+                            <div class="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-1">Smart Scoring</h4>
+                            <p class="text-sm text-gray-600">AI-powered underground music detection</p>
+                        </div>
+                        
+                        <div class="feature-card bg-pink-50 rounded-lg p-4 text-center">
+                            <div class="w-12 h-12 bg-pink-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-1">Daily Discovery</h4>
+                            <p class="text-sm text-gray-600">Fresh underground tracks every day</p>
+                        </div>
+                        
+                        <div class="feature-card bg-indigo-50 rounded-lg p-4 text-center">
+                            <div class="w-12 h-12 bg-indigo-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-medium text-gray-900 mb-1">Personalized</h4>
+                            <p class="text-sm text-gray-600">Tailored to your unique taste</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="goBack()" 
+                            class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Back
+                    </button>
+                    <button type="button" onclick="completeOnboarding()" 
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium text-lg">
+                        🚀 Start Discovering
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let undergroundLevel = 50;
+
+        // Underground slider functionality
+        const slider = document.getElementById('undergroundSlider');
+        const description = document.getElementById('sliderDescription');
+        const markers = document.querySelectorAll('.slider-marker');
+
+        const sliderDescriptions = {
+            0: "Popular music with mainstream appeal",
+            25: "Indie artists with growing popularity",
+            50: "Balanced mix of indie and underground music",
+            75: "Deep underground tracks and hidden gems",
+            100: "The most obscure and experimental sounds"
+        };
+
+        slider.addEventListener('input', function(e) {
+            let value = parseInt(e.target.value);
+            // Snap to nearest marker (0, 25, 50, 75, 100)
+            const snapValue = getNearestMarker(value);
+            undergroundLevel = snapValue;
+            e.target.value = snapValue; // Update the slider position
+            updateSliderDisplay();
+        });
+
+        function updateSliderDisplay() {
+            // Update description
+            description.textContent = sliderDescriptions[getNearestMarker(undergroundLevel)];
+            
+            // Update markers
+            markers.forEach(marker => {
+                const value = parseInt(marker.dataset.value);
+                const distance = Math.abs(value - undergroundLevel);
+                marker.classList.toggle('active', distance <= 15);
+            });
+        }
+
+        function getNearestMarker(value) {
+            const markerValues = [0, 25, 50, 75, 100];
+            return markerValues.reduce((nearest, current) => 
+                Math.abs(current - value) < Math.abs(nearest - value) ? current : nearest
+            );
+        }
+
+        // Complete onboarding
+        async function completeOnboarding() {
+            try {
+                const user = window.firebaseAuth.currentUser;
+                const completionData = {
+                    undergroundLevel: undergroundLevel,
+                    onboardingStep: 3,
+                    onboardingCompleted: true,
+                    onboardingCompletedAt: new Date().toISOString()
+                };
+
+                await saveOnboardingData(user.uid, completionData);
+                
+                // Redirect to discover page
+                window.location.href = 'discover.html';
+            } catch (error) {
+                console.error('Error completing onboarding:', error);
+                alert('Error completing setup. Please try again.');
+            }
+        }
+
+        async function saveOnboardingData(userId, data) {
+            const db = window.firebaseDB;
+            await window.firestoreSetDoc(window.firestoreDoc(db, 'users', userId), data, { merge: true });
+        }
+
+        function goBack() {
+            window.location.href = 'onboarding-step2.html';
+        }
+
+        // Initialize slider display
+        updateSliderDisplay();
+
+        // Add slide-up animation
+        setTimeout(() => {
+            document.getElementById('screen3').classList.add('slide-up');
+        }, 100);
+    </script>
+</body>
+</html>

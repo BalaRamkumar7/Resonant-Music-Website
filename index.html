@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB_a8hYu7k2Y1iBJKFdEzjq0MWSQjdmMw",
+            authDomain: "resonant-e9742.firebaseapp.com",
+            projectId: "resonant-e9742",
+            storageBucket: "resonant-e9742.firebasestorage.app",
+            messagingSenderId: "78620980319",
+            appId: "1:78620980319:web:0471649176a45ffcef17ea",
+            measurementId: "G-N59RDC2D1L"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Make auth and functions available globally
+        window.firebaseAuth = auth;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.db = db;
+        window.doc = doc;
+        window.getDoc = getDoc;
+        window.setDoc = setDoc;
+
+        // Set up auth state listener immediately after Firebase initialization
+        auth.onAuthStateChanged((user) => {
+            if (window.updateAuthUI) {
+                window.updateAuthUI(user);
+            }
+            // Redirect logged-in users to dashboard
+            if (user) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+    <title>Resonant - Discover Hidden Music Gems.</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        .music-note {
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold gradient-text hover:opacity-80">Resonant</a>
+            <div id="authButtons">
+                <button onclick="openAuthModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    Sign In
+                </button>
+            </div>
+            <div id="userInfo" class="hidden flex items-center">
+                <span id="userEmail" class="text-gray-700 mr-4"></span>
+                <a href="discover.html" class="text-purple-600 hover:text-purple-700 mr-4">Discover</a>
+                <button onclick="window.location.href='profile.html'" class="text-purple-600 hover:text-purple-700 mr-4">Profile</button>
+                <button onclick="signOutUser()" class="text-purple-600 hover:text-purple-700">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center">
+            <h2 class="text-5xl font-bold text-gray-900 mb-4">
+                Discover <span class="gradient-text">Underground Music</span> Like Never Before
+            </h2>
+            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                Tell us your favorite artists and playlists. Get AI powered personalized recommendations for hidden gems you'll love. Build your perfect collection.
+            </p>
+            <button onclick="openEmailModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors">
+                Join The Waitlist
+            </button>
+        </div>
+
+        <!-- Hero Mockup -->
+        <div class="mt-16 rounded-lg border border-gray-200 bg-gradient-to-br from-purple-50 to-gray-50 p-12 shadow-lg">
+            <div class="grid grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="text-sm text-gray-500 mb-3">Artist Input</div>
+                    <div class="h-8 bg-purple-200 rounded mb-4"></div>
+                    <div class="space-y-2">
+                        <div class="h-2 bg-gray-200 rounded w-full"></div>
+                        <div class="h-2 bg-gray-200 rounded w-5/6"></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="text-sm text-gray-500 mb-3">Processing</div>
+                    <div class="space-y-3">
+                        <div class="h-6 bg-purple-100 rounded animate-pulse"></div>
+                        <div class="h-6 bg-purple-100 rounded animate-pulse"></div>
+                        <div class="h-6 bg-purple-100 rounded animate-pulse"></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="text-sm text-gray-500 mb-3">Recommendations</div>
+                    <div class="space-y-2">
+                        <div class="h-2 bg-green-200 rounded w-full"></div>
+                        <div class="h-2 bg-green-200 rounded w-5/6"></div>
+                        <div class="h-2 bg-green-200 rounded w-4/6"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 1: Browse -->
+    <section id="browse" class="bg-gray-50 py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-4xl font-bold text-gray-900 mb-4">
+                        Browse The Biggest Selection of <span class="gradient-text">Underground Music</span>
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Explore thousands of independent artists and hidden tracks across all genres. From lo-fi beats to experimental electronic, discover music that matches your taste, powered by AI.
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Curated by music enthusiasts</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Discover emerging artists</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Find hidden gems from all genres</li>
+                    </ul>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-8 shadow-lg">
+                    <div class="space-y-4">
+                        <div class="h-12 bg-purple-100 rounded flex items-center px-4">
+                            <div class="h-2 bg-purple-300 rounded w-1/2"></div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div class="h-3 bg-gray-300 rounded w-1/3"></div>
+                                <div class="h-3 bg-gray-300 rounded w-1/6"></div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div class="h-3 bg-gray-300 rounded w-1/3"></div>
+                                <div class="h-3 bg-gray-300 rounded w-1/6"></div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div class="h-3 bg-gray-300 rounded w-1/3"></div>
+                                <div class="h-3 bg-gray-300 rounded w-1/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Recommendations -->
+    <section id="recommendations" class="py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 gap-12 items-center">
+                <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-purple-50 to-gray-50 p-8 shadow-lg">
+                    <div class="space-y-4">
+                        <div class="h-8 bg-purple-200 rounded w-3/4"></div>
+                        <div class="space-y-3 mt-6">
+                            <div class="h-4 bg-purple-100 rounded w-full"></div>
+                            <div class="h-4 bg-purple-100 rounded w-5/6"></div>
+                            <div class="h-4 bg-purple-100 rounded w-4/6"></div>
+                        </div>
+                        <div class="h-10 bg-purple-500 rounded mt-6 w-1/2"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-4xl font-bold text-gray-900 mb-4">
+                        Get <span class="gradient-text">AI Driven Recommendations</span> Based Off Your Taste
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Share your favorite artists and playlists. Our algorithm analyzes your preferences and recommends hidden gems you'll actually want to listen to.
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Smart algorithm learning</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Personalized to your taste</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Constantly evolving</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Create Playlists -->
+    <section id="playlists" class="bg-gray-50 py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-4xl font-bold text-gray-900 mb-4">
+                        Create Your Own <span class="gradient-text">Perfect Playlists</span>
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Organize recommendations into custom playlists. Save your favorite discoveries, curate themed collections, and organize music your way.
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Unlimited playlist creation</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Smart organization tools</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Share with your friends</li>
+                    </ul>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-8 shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="h-6 bg-purple-200 rounded w-1/2"></div>
+                        <div class="h-6 bg-gray-200 rounded w-1/6"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center p-3 bg-purple-50 rounded border border-purple-200">
+                            <div class="h-8 w-8 bg-purple-300 rounded mr-3"></div>
+                            <div class="h-3 bg-purple-300 rounded flex-1"></div>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded">
+                            <div class="h-8 w-8 bg-gray-300 rounded mr-3"></div>
+                            <div class="h-3 bg-gray-300 rounded flex-1"></div>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded">
+                            <div class="h-8 w-8 bg-gray-300 rounded mr-3"></div>
+                            <div class="h-3 bg-gray-300 rounded flex-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Community -->
+    <section id="community" class="py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 gap-12 items-center">
+                <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50 p-8 shadow-lg">
+                    <div class="space-y-4">
+                        <div class="h-6 bg-blue-200 rounded w-1/2"></div>
+                        <div class="space-y-3 mt-6">
+                            <div class="p-4 bg-white rounded border border-gray-200">
+                                <div class="h-3 bg-gray-300 rounded w-2/3 mb-2"></div>
+                                <div class="h-2 bg-gray-200 rounded w-full"></div>
+                            </div>
+                            <div class="p-4 bg-white rounded border border-gray-200">
+                                <div class="h-3 bg-gray-300 rounded w-2/3 mb-2"></div>
+                                <div class="h-2 bg-gray-200 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-4xl font-bold text-gray-900 mb-4">
+                        Leave Ratings, Comments & <span class="gradient-text">Join The Community</span>
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Share your thoughts on music and help others discover their next favorite track. Rate songs, leave comments, and engage with a community of music lovers.
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Public ratings & reviews</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Community forum</li>
+                        <li class="flex items-center"><span class="text-purple-600 mr-3">✓</span> Help others discover music</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Email Capture Modal -->
+    <div id="emailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Join the waitlist</h3>
+                <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <form id="emailForm" action="https://formspree.io/f/mjggvnob" method="POST" class="space-y-4">
+                <input 
+                    type="email" 
+                    name="email" 
+                    id="emailInput" 
+                    placeholder="Enter your email" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                >
+                <button 
+                    type="submit" 
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                    Get Early Access
+                </button>
+            </form>
+
+            <div id="successMessage" class="hidden text-center">
+                <div class="text-green-600 font-medium mb-2">✓ Success!</div>
+                <p class="text-gray-600 text-sm">Check your email for confirmation. We'll be in touch soon!</p>
+            </div>
+
+            <div id="errorMessage" class="hidden text-center">
+                <p class="text-red-600 text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="authTitle" class="text-2xl font-bold text-gray-900">Sign In</h3>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <form id="authForm" class="space-y-4">
+                <input 
+                    type="email" 
+                    id="authEmail" 
+                    placeholder="Email" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                >
+                <input 
+                    type="password" 
+                    id="authPassword" 
+                    placeholder="Password" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                >
+                <button 
+                    type="submit" 
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-4 text-center">
+                <a href="signup.html" class="text-purple-600 hover:text-purple-700">Don't have an account? Sign Up</a>
+            </div>
+
+            <div id="authSuccess" class="hidden text-center mt-4">
+                <div class="text-green-600 font-medium mb-2">✓ Success!</div>
+                <p class="text-gray-600 text-sm">Welcome back!</p>
+            </div>
+
+            <div id="authError" class="hidden text-center mt-4">
+                <p class="text-red-600 text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Your Profile</h3>
+                <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <form id="profileForm" class="space-y-4">
+                <input 
+                    type="text" 
+                    id="profileName" 
+                    placeholder="Display Name" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                <input 
+                    type="text" 
+                    id="profileStatus" 
+                    placeholder="Status (e.g., Music Lover)" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                <input 
+                    type="text" 
+                    id="profileArtist" 
+                    placeholder="Favorite Artist" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                <input 
+                    type="text" 
+                    id="profileSong" 
+                    placeholder="Favorite Song" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                <button 
+                    type="submit" 
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                    Save Profile
+                </button>
+            </form>
+
+            <div id="profileSuccess" class="hidden text-center mt-4">
+                <div class="text-green-600 font-medium mb-2">✓ Profile updated!</div>
+            </div>
+
+            <div id="profileError" class="hidden text-center mt-4">
+                <p class="text-red-600 text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/index.min.js"></script>
+    <script src="/app.js"></script>
+</body>
+</html>

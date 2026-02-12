@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB_a8hYu7k2Y1iBJKFdEzjq0MWSQjdmMw",
+            authDomain: "resonant-e9742.firebaseapp.com",
+            projectId: "resonant-e9742",
+            storageBucket: "resonant-e9742.firebasestorage.app",
+            messagingSenderId: "78620980319",
+            appId: "1:78620980319:web:0471649176a45ffcef17ea",
+            measurementId: "G-N59RDC2D1L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+
+        window.firebaseAuth = auth;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+    <title>Discover Music - Resonant</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .track-card {
+            transition: all 0.3s ease;
+        }
+        
+        .track-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #7c3aed;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold gradient-text hover:opacity-80">Resonant</a>
+            <div class="flex items-center space-x-4">
+                <a href="profile.html" class="text-purple-600 hover:text-purple-700 font-medium">Profile</a>
+                <button onclick="signOutUser()" class="text-purple-600 hover:text-purple-700 font-medium">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Search Section -->
+        <section class="mb-12">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                    Discover <span class="gradient-text">Underground Music</span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-8">
+                    Search for artists, tracks, and discover your next favorite sound
+                </p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="max-w-2xl mx-auto">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search for artists, tracks, or genres..." 
+                        class="w-full px-6 py-4 pr-12 text-lg border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                    <button 
+                        onclick="performSearch()" 
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-colors"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Underground Scoring Guide -->
+        <section class="mb-8">
+            <div class="bg-white rounded-lg border border-purple-200 shadow-sm">
+                <button onclick="toggleScoringGuide()" 
+                        class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">🎵 Underground Scoring Guide</h3>
+                            <p class="text-sm text-gray-600">How we discover underground music</p>
+                        </div>
+                    </div>
+                    <svg id="guideArrow" class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                
+                <div id="scoringGuide" class="hidden border-t border-purple-100">
+                    <div class="p-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Scoring Factors -->
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                                    <span class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs mr-2">📊</span>
+                                    Scoring Factors (0-100 points)
+                                </h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-purple-600 font-medium">👥</span>
+                                        <div>
+                                            <strong>Listeners (30pts):</strong> Lower listener counts = more underground
+                                            <div class="text-xs text-gray-500 mt-1">&lt;10K: 30pts | 10K-50K: 20pts | 50K-100K: 10pts</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-purple-600 font-medium">🎵</span>
+                                        <div>
+                                            <strong>Genre (25pts):</strong> Underground-friendly genres score higher
+                                            <div class="text-xs text-gray-500 mt-1">Experimental, ambient, lo-fi, vaporwave, etc.</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-purple-600 font-medium">🆕</span>
+                                        <div>
+                                            <strong>Discovery (20pts):</strong> Recently discovered artists
+                                            <div class="text-xs text-gray-500 mt-1">Newer to the platform = more underground</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-purple-600 font-medium">🏷️</span>
+                                        <div>
+                                            <strong>Indie Label (15pts):</strong> Independent vs major label
+                                            <div class="text-xs text-gray-500 mt-1">Independent labels get bonus points</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-purple-600 font-medium">💫</span>
+                                        <div>
+                                            <strong>Engagement (10pts):</strong> User interaction patterns
+                                            <div class="text-xs text-gray-500 mt-1">Less mainstream engagement = more underground</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Score Categories -->
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                                    <span class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs mr-2">🏷️</span>
+                                    Underground Categories
+                                </h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-red-600 font-bold">🔥</span>
+                                            <strong class="text-red-900">Deep Cut</strong>
+                                        </div>
+                                        <span class="text-red-700 font-mono font-bold">80-100</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-orange-600 font-bold">⚡</span>
+                                            <strong class="text-orange-900">Underground</strong>
+                                        </div>
+                                        <span class="text-orange-700 font-mono font-bold">65-79</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-yellow-600 font-bold">🌟</span>
+                                            <strong class="text-yellow-900">Indie</strong>
+                                        </div>
+                                        <span class="text-yellow-700 font-mono font-bold">50-64</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-gray-600 font-bold">📻</span>
+                                            <strong class="text-gray-900">Mainstream</strong>
+                                        </div>
+                                        <span class="text-gray-700 font-mono font-bold">30-49</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 opacity-60">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-red-400 font-bold">❌</span>
+                                            <strong class="text-red-700 line-through">Filtered</strong>
+                                        </div>
+                                        <span class="text-red-600 font-mono font-bold">&lt;30</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <p class="text-sm text-purple-800">
+                                <strong>💡 Pro Tip:</strong> Hover over any underground badge to see the detailed score breakdown for that track!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Results -->
+        <section id="searchResults" class="hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Search Results</h2>
+            <div id="resultsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <!-- Results will be populated here -->
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden text-center py-12">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Searching for music...</p>
+        </div>
+
+        <!-- Recommendations Section -->
+        <section id="recommendations" class="mt-16">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Recommended for You</h2>
+            <div id="recommendationsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <!-- Recommendations will be populated here -->
+            </div>
+            <div id="paginationControls" class="mt-8">
+                <!-- Pagination controls will be populated here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function toggleScoringGuide() {
+            const guide = document.getElementById('scoringGuide');
+            const arrow = document.getElementById('guideArrow');
+            
+            guide.classList.toggle('hidden');
+            
+            if (guide.classList.contains('hidden')) {
+                arrow.classList.remove('rotate-180');
+            } else {
+                arrow.classList.add('rotate-180');
+            }
+        }
+    </script>
+
+    <!-- Track Modal -->
+    <div id="trackModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modalTitle" class="text-2xl font-bold text-gray-900">Track Details</h3>
+                <button onclick="closeTrackModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <div id="modalContent">
+                <!-- Track details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #9333ea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script src="/app.js"></script>
+    <script src="/discover.js"></script>
+</body>
+</html>

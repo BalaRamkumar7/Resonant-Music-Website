@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        // Make Firestore functions globally available
+        window.firestoreDoc = doc;
+        window.firestoreSetDoc = setDoc;
+        window.firestoreGetDoc = getDoc;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB_a8hYu7k2Y1iBJKFdEzjq0MWSQjdmMw",
+            authDomain: "resonant-e9742.firebaseapp.com",
+            projectId: "resonant-e9742",
+            storageBucket: "resonant-e9742.firebasestorage.app",
+            messagingSenderId: "78620980319",
+            appId: "1:78620980319:web:0471649176a45ffcef17ea",
+            measurementId: "G-N59RDC2D1L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseDB = db;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                // Check if user has already completed onboarding
+                checkOnboardingStatus(user);
+            }
+        });
+
+        async function checkOnboardingStatus(user) {
+            try {
+                console.log('Step 1 - Checking onboarding status for user:', user.uid);
+                const userDoc = await window.firestoreGetDoc(window.firestoreDoc(window.firebaseDB, 'users', user.uid));
+                console.log('Step 1 - User doc exists:', userDoc.exists());
+                
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    console.log('Step 1 - User data:', data);
+                    
+                    if (data.onboardingCompleted) {
+                        console.log('Step 1 - User already completed onboarding, redirecting to discover');
+                        window.location.href = 'discover.html';
+                    } else {
+                        console.log('Step 1 - Loading existing profile data');
+                        // Load existing profile data
+                        if (data.displayName) {
+                            document.getElementById('displayName').value = data.displayName;
+                            console.log('Step 1 - Restored display name:', data.displayName);
+                        }
+                        if (data.bio) {
+                            document.getElementById('bio').value = data.bio;
+                            console.log('Step 1 - Restored bio:', data.bio);
+                        }
+                        if (data.profilePicture) {
+                            console.log('Step 1 - Restoring profile picture:', data.profilePicture.substring(0, 50) + '...');
+                            document.getElementById('profilePreview').src = data.profilePicture;
+                            // Note: We don't restore the file input value for security reasons
+                            // but the preview image shows the uploaded picture
+                        }
+                        
+                        // Show onboarding
+                        document.getElementById('onboardingContainer').classList.remove('hidden');
+                        console.log('Step 1 - Onboarding container shown with loaded data');
+                    }
+                } else {
+                    console.log('Step 1 - No user doc found, showing onboarding');
+                    document.getElementById('onboardingContainer').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Step 1 - Error checking onboarding status:', error);
+                document.getElementById('onboardingContainer').classList.remove('hidden');
+            }
+        }
+    </script>
+    <title>Welcome to Resonant</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .file-upload-label {
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-label:hover {
+            background-color: #f3f4f6;
+            border-color: #667eea;
+        }
+        
+        .character-count {
+            transition: color 0.3s ease;
+        }
+        
+        .character-count.warning {
+            color: #f59e0b;
+        }
+        
+        .character-count.danger {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Onboarding Container -->
+    <div id="onboardingContainer" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-600">Step 1 of 3</span>
+                    <span class="text-sm text-gray-600">33%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="progress-step active h-2 rounded-full" style="width: 33%"></div>
+                </div>
+                <div class="flex justify-between mt-2">
+                    <div class="w-8 h-2 bg-purple-600 rounded-full"></div>
+                    <div class="w-8 h-2 bg-gray-300 rounded-full"></div>
+                    <div class="w-8 h-2 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Screen 1: Basic Profile -->
+            <div id="screen1" class="bg-white rounded-2xl shadow-xl p-8">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">Welcome to Resonant!</h1>
+                    <p class="text-gray-600">Let's set up your profile to discover underground music tailored to you.</p>
+                </div>
+
+                <!-- Form -->
+                <form id="profileForm" class="space-y-6">
+                    <!-- Display Name -->
+                    <div>
+                        <label for="displayName" class="block text-sm font-medium text-gray-700 mb-2">
+                            Display Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="displayName" name="displayName" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               placeholder="What should we call you?" maxlength="30">
+                        <div class="mt-1 text-xs text-gray-500">
+                            <span id="nameCount">0</span>/30 characters
+                        </div>
+                    </div>
+
+                    <!-- Profile Picture -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Profile Picture <span class="text-gray-400">(optional)</span>
+                        </label>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <img id="profilePreview" src="https://picsum.photos/100/100?text=USER&bg=667eea&color=ffffff" 
+                                     alt="Profile" class="w-20 h-20 rounded-full object-cover">
+                                <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="profilePicture" class="file-upload-label block px-4 py-2 border border-gray-300 rounded-lg cursor-pointer text-sm text-gray-700">
+                                    Choose Photo
+                                </label>
+                                <input type="file" id="profilePicture" accept="image/*" class="hidden">
+                                <p class="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max 5MB.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div>
+                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+                            Bio <span class="text-gray-400">(optional)</span>
+                        </label>
+                        <textarea id="bio" name="bio" rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="Tell us about yourself and your music taste..." maxlength="150"></textarea>
+                        <div class="mt-1 text-xs text-gray-500">
+                            <span id="bioCount">0</span>/150 characters
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" onclick="skipOnboarding()" 
+                                class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Skip
+                        </button>
+                        <button type="submit" 
+                                class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors">
+                            Next Step
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Character counters
+        document.getElementById('displayName').addEventListener('input', function(e) {
+            const count = e.target.value.length;
+            document.getElementById('nameCount').textContent = count;
+        });
+
+        document.getElementById('bio').addEventListener('input', function(e) {
+            const count = e.target.value.length;
+            document.getElementById('bioCount').textContent = count;
+            
+            const counter = document.getElementById('bioCount');
+            counter.classList.remove('warning', 'danger');
+            if (count > 120) counter.classList.add('warning');
+            if (count > 140) counter.classList.add('danger');
+        });
+
+        // Profile picture preview
+        document.getElementById('profilePicture').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form submission
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                displayName: document.getElementById('displayName').value,
+                bio: document.getElementById('bio').value,
+                profilePicture: document.getElementById('profilePreview').src,
+                onboardingStep: 1,
+                onboardingCompleted: false
+            };
+
+            try {
+                const user = window.firebaseAuth.currentUser;
+                await saveOnboardingData(user.uid, formData);
+                
+                // Redirect to next step
+                window.location.href = 'onboarding-step2.html';
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                console.error('Error details:', {
+                    code: error.code,
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                let errorMessage = 'Error saving profile. Please try again.';
+                
+                if (error.code === 'permission-denied') {
+                    errorMessage = 'Permission denied. Please check your account settings.';
+                } else if (error.code === 'unavailable') {
+                    errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
+                } else if (error.code === 'unauthenticated') {
+                    errorMessage = 'Authentication error. Please sign in again.';
+                }
+                
+                alert(errorMessage + '\n\nError: ' + error.message);
+            }
+        });
+
+        async function saveOnboardingData(userId, data) {
+            try {
+                console.log('Saving onboarding data for user:', userId);
+                console.log('Data to save:', data);
+                
+                const db = window.firebaseDB;
+                const docRef = window.firestoreDoc(db, 'users', userId);
+                await window.firestoreSetDoc(docRef, data, { merge: true });
+                
+                console.log('Onboarding data saved successfully');
+            } catch (error) {
+                console.error('Error saving onboarding data:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                throw error;
+            }
+        }
+
+        async function skipOnboarding() {
+            try {
+                const user = window.firebaseAuth.currentUser;
+                await saveOnboardingData(user.uid, {
+                    onboardingCompleted: true,
+                    onboardingSkipped: true
+                });
+                
+                window.location.href = 'discover.html';
+            } catch (error) {
+                console.error('Error skipping onboarding:', error);
+            }
+        }
+    </script>
+</body>
+</html>
